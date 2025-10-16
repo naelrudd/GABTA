@@ -12,19 +12,16 @@ const app = express();
 app.use(helmet());
 
 // CORS configuration - allow frontend to access backend
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://127.0.0.1:3000,http://192.168.18.8:3000')
+const allowedOrigins = (process.env.CORS_ORIGIN || 'https://c6xhjr4r-3000.asse.devtunnels.ms,http://localhost:3000,http://127.0.0.1:3000,http://192.168.18.8:3000')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
 
-app.use(cors({ 
+app.use(cors({
   origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps, Postman, curl)
     if (!origin) return callback(null, true);
-    
     if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
+      return callback(new Error('CORS policy does not allow this origin'), false);
     }
     return callback(null, true);
   },
@@ -34,7 +31,6 @@ app.use(cors({
   exposedHeaders: ['Content-Length', 'X-Request-Id']
 }));
 
-// Handle preflight requests
 app.options('*', cors());
 
 app.use(express.json());
