@@ -1,0 +1,39 @@
+{
+  "name": "gabta-server",
+  "version": "1.0.0",
+  "description": "Backend server for GABTA attendance system",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "migrate": "sequelize-cli db:migrate",
+    "seed": "sequelize-cli db:seed:all",
+    "test": "jest"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
+    "express": "^4.17.3",
+    "express-validator": "^7.2.1",
+    "helmet": "^5.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "mysql2": "^3.15.2",
+    "nodemailer": "^7.0.9",
+    "pg": "^8.7.3",
+    "pg-hstore": "^2.3.4",
+    "qrcode": "^1.5.0",
+    "semver": "^7.5.4",
+    "sequelize": "^6.37.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^4.6.3",
+    "validator": "^13.11.0"
+  },
+  "devDependencies": {
+    "jest": "^27.5.1",
+    "nodemon": "^3.0.1",
+    "sequelize-cli": "^6.4.1",
+    "supertest": "^6.2.2"
+  }
+}

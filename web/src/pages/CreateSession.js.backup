@@ -1,0 +1,166 @@
+import React, { useState } from 'react';
+import { Container, Card, Form, Button, Alert } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
+import { Formik } from 'formik';
+import * as Yup from 'yup';
+import api from '../services/api';
+
+const CreateSessionSchema = Yup.object().shape({
+  name: Yup.string().required('Nama sesi wajib diisi'),
+  startTime: Yup.date().required('Waktu mulai wajib diisi'),
+  endTime: Yup.date()
+    .required('Waktu selesai wajib diisi')
+    .min(Yup.ref('startTime'), 'Waktu selesai harus setelah waktu mulai'),
+  locationLat: Yup.number().required('Latitude wajib diisi').min(-90).max(90),
+  locationLng: Yup.number().required('Longitude wajib diisi').min(-180).max(180),
+});
+
+const CreateSession = () => {
+  const navigate = useNavigate();
+  const [error, setError] = useState(null);
+
+  const handleSubmit = async (values, { setSubmitting }) => {
+    try {
+      setError(null);
+      const res = await api.post('/sessions', values);
+      alert('Sesi berhasil dibuat!');
+      navigate(`/sessions/${res.data.session.id}`);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Gagal membuat sesi');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const getCurrentLocation = (setFieldValue) => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setFieldValue('locationLat', position.coords.latitude);
+          setFieldValue('locationLng', position.coords.longitude);
+          alert('Lokasi berhasil diambil!');
+        },
+        (error) => {
+          alert('Gagal mendapatkan lokasi: ' + error.message);
+        }
+      );
+    } else {
+      alert('Geolocation tidak didukung oleh browser Anda.');
+    }
+  };
+
+  return (
+    <Container className="py-4">
+      <Card>
+        <Card.Header>
+          <h4>Buat Sesi Pertemuan Baru</h4>
+        </Card.Header>
+        <Card.Body>
+          {error && <Alert variant="danger">{error}</Alert>}
+
+          <Formik
+            initialValues={{
+              name: '',
+              startTime: '',
+              endTime: '',
+              locationLat: '',
+              locationLng: '',
+            }}
+            validationSchema={CreateSessionSchema}
+            onSubmit={handleSubmit}
+          >
+            {({ values, errors, touched, handleChange, handleSubmit, isSubmitting, setFieldValue }) => (
+              <Form onSubmit={handleSubmit}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Nama Sesi / Mata Kuliah</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="name"
+                    value={values.name}
+                    onChange={handleChange}
+                    isInvalid={touched.name && errors.name}
+                    placeholder="Contoh: Rapat Tim / Kelas Algoritma"
+                  />
+                  <Form.Control.Feedback type="invalid">{errors.name}</Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Waktu Mulai</Form.Label>
+                  <Form.Control
+                    type="datetime-local"
+                    name="startTime"
+                    value={values.startTime}
+                    onChange={handleChange}
+                    isInvalid={touched.startTime && errors.startTime}
+                  />
+                  <Form.Control.Feedback type="invalid">{errors.startTime}</Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Waktu Selesai</Form.Label>
+                  <Form.Control
+                    type="datetime-local"
+                    name="endTime"
+                    value={values.endTime}
+                    onChange={handleChange}
+                    isInvalid={touched.endTime && errors.endTime}
+                  />
+                  <Form.Control.Feedback type="invalid">{errors.endTime}</Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Lokasi (Latitude)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    step="any"
+                    name="locationLat"
+                    value={values.locationLat}
+                    onChange={handleChange}
+                    isInvalid={touched.locationLat && errors.locationLat}
+                    placeholder="-6.200000"
+                  />
+                  <Form.Control.Feedback type="invalid">{errors.locationLat}</Form.Control.Feedback>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Lokasi (Longitude)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    step="any"
+                    name="locationLng"
+                    value={values.locationLng}
+                    onChange={handleChange}
+                    isInvalid={touched.locationLng && errors.locationLng}
+                    placeholder="106.816666"
+                  />
+                  <Form.Control.Feedback type="invalid">{errors.locationLng}</Form.Control.Feedback>
+                  <Form.Text className="text-muted">
+                    <Button
+                      variant="link"
+                      size="sm"
+                      onClick={() => getCurrentLocation(setFieldValue)}
+                      type="button"
+                    >
+                      Gunakan Lokasi Saat Ini
+                    </Button>
+                  </Form.Text>
+                </Form.Group>
+
+                <div className="d-flex gap-2">
+                  <Button variant="primary" type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? 'Menyimpan...' : 'Buat Sesi'}
+                  </Button>
+                  <Button variant="secondary" onClick={() => navigate('/dashboard')}>
+                    Batal
+                  </Button>
+                </div>
+              </Form>
+            )}
+          </Formik>
+        </Card.Body>
+      </Card>
+    </Container>
+  );
+};
+
+export default CreateSession;
