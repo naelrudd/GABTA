@@ -120,3 +120,47 @@ exports.deleteSession = async (req, res, next) => {
     next(error);
   }
 };
+
+// Get session info with fresh token (for direct scan access)
+// This allows students to access /scan/:sessionId and get a fresh token automatically
+exports.getSessionForScan = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    
+    // Get session basic info
+    const session = await sessionService.getSessionById(id);
+    
+    // Check if session is active
+    const now = new Date();
+    const isActive = now >= new Date(session.startTime) && now <= new Date(session.endTime);
+    
+    if (!isActive) {
+      return res.status(400).json({ 
+        message: 'Sesi presensi belum dimulai atau sudah berakhir',
+        session: {
+          id: session.id,
+          name: session.name,
+          startTime: session.startTime,
+          endTime: session.endTime,
+        }
+      });
+    }
+    
+    // Generate fresh token for this student
+    const token = sessionService.generateQRToken(id, session.qrSecret);
+    
+    res.status(200).json({
+      sessionId: id,
+      sessionName: session.name,
+      token,
+      expiresIn: 30, // seconds
+      location: {
+        lat: session.locationLat,
+        lng: session.locationLng,
+        radius: session.radiusMeters,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

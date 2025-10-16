@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Formik, useFormikContext } from 'formik';
 import * as Yup from 'yup';
 import api from '../services/api';
@@ -46,8 +46,12 @@ const RegisterSchema = Yup.object().shape({
 
 const Register = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // Get redirect path from navigation state (for /scan redirect)
+  const returnTo = location.state?.returnTo || '/dashboard';
 
   // observer component to handle email -> idType side-effect using Formik context
   const FormObserver = () => {
@@ -71,9 +75,9 @@ const Register = () => {
       
       setSuccess(response.data.message || 'Registrasi berhasil! Silakan cek email Anda untuk verifikasi.');
       
-      // Redirect to login after 3 seconds
+      // Redirect to login after 3 seconds, passing returnTo
       setTimeout(() => {
-        navigate('/login');
+        navigate('/login', { state: { returnTo } });
       }, 3000);
     } catch (err) {
       setError(err.response?.data?.message || 'Registrasi gagal');

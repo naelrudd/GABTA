@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { Container, Row, Col, Card, Button, Alert } from 'react-bootstrap';
@@ -16,20 +16,22 @@ const loginSchema = Yup.object().shape({
 const Login = () => {
   const { login, error } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loginError, setLoginError] = useState(null);
   const [needsVerification, setNeedsVerification] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
+  
+  // Get redirect path from navigation state (for /scan redirect)
+  const returnTo = location.state?.returnTo || location.state?.from?.pathname || '/dashboard';
 
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
       setLoginError(null);
       setNeedsVerification(false);
       await login(values.email, values.password);
-      navigate('/dashboard');
+      navigate(returnTo); // Redirect to original destination
     } catch (err) {
       if (err.response?.data?.needsVerification) {
         setNeedsVerification(true);
-        setUserEmail(err.response.data.email);
         setLoginError('Email Anda belum diverifikasi. Silakan cek inbox email Anda.');
       } else {
         setLoginError(err.response?.data?.message || 'Login failed. Please try again.');
@@ -111,7 +113,7 @@ const Login = () => {
               
               <div className="text-center mt-3">
                 <p>
-                  Don't have an account? <Link to="/register">Register</Link>
+                  Don't have an account? <Link to="/register" state={{ returnTo }}>Register</Link>
                 </p>
               </div>
             </Card.Body>

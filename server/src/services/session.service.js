@@ -128,19 +128,42 @@ class SessionService {
     const token = this.generateQRToken(sessionId, session.qrSecret);
     const { code, token: manualToken } = this.generateManualCode(sessionId, session.qrSecret);
     
-    // Generate QR code image (base64)
-    const qrCodeImage = await QRCode.toDataURL(token, {
+    // Get server URL from environment or use default
+    const serverUrl = process.env.SERVER_URL || `http://localhost:${process.env.PORT || 5000}`;
+    const webUrl = process.env.WEB_URL || 'http://localhost:3000';
+    
+    // SIMPLE QR CODE with sessionId in URL path!
+    // When scanned: http://192.168.18.8:3000/attend/{sessionId}
+    // - Mobile opens browser
+    // - If not logged in → auto-redirect to login → back to this URL
+    // - If logged in → page auto-requests fresh token from backend → auto-submit
+    const scanUrl = `${webUrl}/attend/${sessionId}`;
+    
+    // Generate QR code image (base64) - simple URL with sessionId!
+    const qrCodeImage = await QRCode.toDataURL(scanUrl, {
       errorCorrectionLevel: 'M',
       width: 300,
     });
+    
+    // Also include full data for API response
+    const qrData = {
+      sessionId,
+      token,
+      serverUrl,  // Backend API URL
+      webUrl,     // Frontend URL for easy access
+      scanUrl,    // Simple scan page URL - just /scan
+    };
     
     return {
       token,
       manualCode: code,
       manualToken,
       qrCodeImage,
+      qrData,      // Include parsed data for easy access
       expiresIn: 30, // seconds
       sessionId,
+      serverUrl,   // For display in UI
+      scanUrl,     // Simple link - just http://IP:3000/scan
     };
   }
 

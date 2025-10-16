@@ -12,7 +12,8 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // Pass the current location as returnTo for redirect after login
+    return <Navigate to="/login" state={{ returnTo: location.pathname, from: location }} replace />;
   }
 
   if (requiredRole && user.role !== requiredRole) {

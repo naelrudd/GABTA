@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Container, Row, Col, Card, Button, Alert, Form, Badge, Modal } from 'react-bootstrap';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 
 const ScanAttendance = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [scanning, setScanning] = useState(false);
   const [manualMode, setManualMode] = useState(false);
   const [sessionId, setSessionId] = useState('');
@@ -37,12 +38,19 @@ const ScanAttendance = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  // Get location on mount
+  // Get location on mount and auto-start scanner when ready
   useEffect(() => {
     if (isAuthenticated) {
       getCurrentLocation();
     }
   }, [isAuthenticated]);
+
+  // Auto-start scanner when location is ready (for mobile UX)
+  useEffect(() => {
+    if (isAuthenticated && location && !scanning && !result) {
+      startScanning();
+    }
+  }, [isAuthenticated, location, scanning, result]);
 
   // Cleanup scanner on unmount
   useEffect(() => {
@@ -53,7 +61,7 @@ const ScanAttendance = () => {
     };
   }, []);
 
-  const getCurrentLocation = () => {
+  const getCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
       setError('Browser tidak mendukung geolocation');
       return;
@@ -74,68 +82,9 @@ const ScanAttendance = () => {
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
     );
-  };
+  }, []);
 
-  const startScanning = () => {
-    setScanning(true);
-    setError(null);
-    setResult(null);
-    setManualMode(false);
-
-    // Initialize scanner
-    setTimeout(() => {
-      if (scannerRef.current && !qrScannerRef.current) {
-        const scanner = new Html5QrcodeScanner(
-          'qr-reader',
-          { 
-            fps: 10,
-            qrbox: { width: 300, height: 300 },
-            aspectRatio: 1.0,
-            showTorchButtonIfSupported: true,
-            showZoomSliderIfSupported: true,
-          },
-          false
-        );
-
-        scanner.render(onScanSuccess, onScanError);
-        qrScannerRef.current = scanner;
-      }
-    }, 100);
-  };
-
-  const stopScanning = () => {
-    if (qrScannerRef.current) {
-      qrScannerRef.current.clear().catch(err => console.error('Stop scan error:', err));
-      qrScannerRef.current = null;
-    }
-    setScanning(false);
-  };
-
-  const onScanSuccess = async (decodedText, decodedResult) => {
-    try {
-      stopScanning();
-      const data = JSON.parse(decodedText);
-      
-      if (data.sessionId && data.token) {
-        setSessionId(data.sessionId);
-        setToken(data.token);
-        // Auto-submit
-        await submitAttendance(data.sessionId, data.token);
-      } else {
-        setError('QR Code tidak valid. Silakan scan QR code dari sesi presensi.');
-      }
-    } catch (err) {
-      setError('Format QR Code tidak valid');
-      setTimeout(() => startScanning(), 2000); // Resume scanning after 2s
-    }
-  };
-
-  const onScanError = (errorMessage) => {
-    // Ignore continuous scan errors, only log
-    // console.log('Scan error:', errorMessage);
-  };
-
-  const submitAttendance = async (sid = sessionId, tkn = token) => {
+  const submitAttendance = useCallback(async (sid = sessionId, tkn = token) => {
     if (!sid || !tkn) {
       setError('Session ID dan Token harus diisi');
       return;
@@ -183,6 +132,156 @@ const ScanAttendance = () => {
     } finally {
       setSubmitting(false);
     }
+  }, [sessionId, token, location, getCurrentLocation]);
+
+  // Check URL params for sessionId & token (from QR code URL scan)
+  // This runs AFTER submitAttendance is defined
+  useEffect(() => {
+    const urlSessionId = searchParams.get('sessionId');
+    const urlToken = searchParams.get('token');
+    
+    if (urlSessionId && urlToken && isAuthenticated && location) {
+      console.log('🎯 Auto-submit from QR URL params:', { urlSessionId, urlToken });
+      setSessionId(urlSessionId);
+      setToken(urlToken);
+      
+      // Clear URL params to prevent re-submission on refresh
+      setSearchParams({});
+      
+      // Auto-submit attendance
+      submitAttendance(urlSessionId, urlToken);
+    }
+  }, [searchParams, isAuthenticated, location, setSearchParams, submitAttendance]);
+
+  const onScanSuccess = useCallback(async (decodedText, decodedResult) => {
+    try {
+      if (qrScannerRef.current) {
+        qrScannerRef.current.pause(true);
+      }
+      
+      // Check if QR contains URL format (simple check for http)
+      if (decodedText.startsWith('http://') || decodedText.startsWith('https://')) {
+        console.log('📱 QR scanned as URL:', decodedText);
+        
+        // Extract URL and check if it has query params (sessionId & token)
+        try {
+          const url = new URL(decodedText);
+          const urlSessionId = url.searchParams.get('sessionId');
+          const urlToken = url.searchParams.get('token');
+          
+          if (urlSessionId && urlToken) {
+            // Has params - auto submit!
+            console.log('✅ Auto-submitting from QR URL params');
+            setSessionId(urlSessionId);
+            setToken(urlToken);
+            
+            if (qrScannerRef.current) {
+              qrScannerRef.current.clear().catch(err => console.error('Stop scan error:', err));
+              qrScannerRef.current = null;
+            }
+            setScanning(false);
+            
+            await submitAttendance(urlSessionId, urlToken);
+            return;
+          }
+        } catch (urlErr) {
+          console.log('URL parse failed, treating as simple redirect');
+        }
+        
+        // Simple URL without params - probably just http://IP:3000/scan
+        // User already on this page, so just ignore or show message
+        console.log('📱 Simple scan URL detected - already on scan page');
+        if (qrScannerRef.current) {
+          qrScannerRef.current.resume();
+        }
+        setError('QR code terdeteksi! Scan QR code dari sesi presensi yang aktif.');
+        setTimeout(() => {
+          setError(null);
+          if (qrScannerRef.current) {
+            qrScannerRef.current.resume();
+          }
+        }, 2000);
+        return;
+      }
+      
+      // Try to parse as JSON (backward compatibility)
+      try {
+        const data = JSON.parse(decodedText);
+        
+        if (data.sessionId && data.token) {
+          setSessionId(data.sessionId);
+          setToken(data.token);
+          
+          console.log('📱 QR scanned as JSON - auto-submitting attendance');
+          
+          if (qrScannerRef.current) {
+            qrScannerRef.current.clear().catch(err => console.error('Stop scan error:', err));
+            qrScannerRef.current = null;
+          }
+          setScanning(false);
+          
+          await submitAttendance(data.sessionId, data.token);
+        } else {
+          throw new Error('Missing sessionId or token');
+        }
+      } catch (jsonErr) {
+        setError('QR Code tidak valid. Scan QR code dari sesi presensi yang aktif.');
+        setTimeout(() => {
+          setError(null);
+          if (qrScannerRef.current) {
+            qrScannerRef.current.resume();
+          }
+        }, 2000);
+      }
+    } catch (err) {
+      console.error('QR Scan error:', err);
+      setError('Gagal memproses QR code');
+      setTimeout(() => {
+        setError(null);
+        if (qrScannerRef.current) {
+          qrScannerRef.current.resume();
+        }
+      }, 2000);
+    }
+  }, [submitAttendance]);
+
+  const onScanError = useCallback((errorMessage) => {
+    // Ignore continuous scan errors
+  }, []);
+
+  const startScanning = useCallback(() => {
+    setScanning(true);
+    setError(null);
+    setResult(null);
+    setManualMode(false);
+
+    // Initialize scanner
+    setTimeout(() => {
+      if (scannerRef.current && !qrScannerRef.current) {
+        const scanner = new Html5QrcodeScanner(
+          'qr-reader',
+          { 
+            fps: 10,
+            qrbox: { width: 300, height: 300 },
+            aspectRatio: 1.0,
+            showTorchButtonIfSupported: true,
+            showZoomSliderIfSupported: true,
+          },
+          false
+        );
+
+        scanner.render(onScanSuccess, onScanError);
+        qrScannerRef.current = scanner;
+      }
+    }, 100);
+  }, [onScanSuccess, onScanError]);
+
+  const stopScanning = () => {
+    if (qrScannerRef.current) {
+      qrScannerRef.current.clear().catch(err => console.error('Stop scan error:', err));
+      qrScannerRef.current = null;
+    }
+    setScanning(false);
   };
 
   const handleManualSubmit = (e) => {

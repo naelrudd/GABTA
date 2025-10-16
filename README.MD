@@ -1,6 +1,11 @@
-# 📚 GABTA - Sistem Presensi Berbasis Web dengan QR Code dan Geolocation
+# 📚 GABTA - Sistem Presensi QR Code + GPS
 
-**GABTA** (Geolocation-Based Attendance Tracking Application) adalah sistem presensi modern yang menggunakan teknologi QR Code dan validasi lokasi GPS untuk memastikan kehadiran mahasiswa secara akurat. Sistem ini sepenuhnya berbasis web untuk kemudahan akses tanpa perlu instalasi aplikasi mobile.
+**GABTA** (Geolocation-Based Attendance Tracking Application) adalah sistem presensi berbasis web dengan QR Code scanning dan validasi lokasi GPS. Tanpa perlu install aplikasi mobile.
+
+**Quick Links:**
+- 📖 [Panduan Instalasi Lengkap](PANDUAN_INSTALASI.md) - Bahasa Indonesia
+- 📧 [Setup Email (Mailtrap)](SETUP_MAILTRAP.md) - 5 menit
+- 🖥️ [One-Click Installer](setup-windows.bat) - Windows .bat file
 
 ## ✨ Fitur Utama
 
@@ -67,227 +72,93 @@
 
 ## 🚀 Quick Start
 
-### Prerequisites:
-- Node.js v22+ (recommended)
-- PostgreSQL v12+
-- Gmail account atau SMTP server (untuk email verification)
+### One-Click Setup (Windows)
+```powershell
+# Double-click file ini:
+setup-windows.bat
+```
 
-### 1. Setup Backend (10 minutes)
+Script otomatis install dependencies, setup database, dan start servers.
 
+### Manual Setup (Semua OS)
+Ikuti panduan lengkap: **[PANDUAN_INSTALASI.md](PANDUAN_INSTALASI.md)**
+
+**TL;DR:**
 ```bash
-# Navigate to server
-cd server
+# 1. Install dependencies
+cd server && npm install
+cd ../web && npm install
 
-# Install dependencies
-npm install
-
-# Create database
+# 2. Setup database & env
 createdb gabta_db
+cd server && copy .env.example .env
+# Edit .env (DB, JWT, EMAIL) - Lihat SETUP_MAILTRAP.md
 
-# Configure environment
-copy .env.example .env
-# Edit .env with your settings:
-# - DATABASE_URL (PostgreSQL connection)
-# - JWT_SECRET (random string)
-# - EMAIL_USER (Gmail address)
-# - EMAIL_PASS (Gmail app password)
-# - FRONTEND_URL (http://localhost:3000)
-
-# Run migrations
+# 3. Migrate & seed
 npx sequelize-cli db:migrate
-
-# Seed initial data (admin user + roles)
 npx sequelize-cli db:seed:all
 
-# Start server
-npm run dev
-```
-
-**Default Admin Credentials:**
-- Email: admin@gabta.com
-- Password: admin123
-
-Server runs on: http://localhost:5000
-
-### 2. Setup Web App (5 minutes)
-
-```bash
-# Open new terminal
-cd web
-
-# Install dependencies
-npm install
-
-# Start development server
-npm start
-```
-
-Web app runs on: http://localhost:3000
-
-### 3. Setup Email Service (Gmail)
-
-1. Buka [Google Account Security](https://myaccount.google.com/security)
-2. Enable **2-Step Verification**
-3. Generate **App Password**:
-   - Go to: https://myaccount.google.com/apppasswords
-   - Select "Mail" and "Other (Custom name)"
-   - Copy the generated password
-4. Update `.env` file:
-   ```
-   EMAIL_USER=your-email@gmail.com
-   EMAIL_PASS=your-app-password (16 characters)
-   ```
-
-**Alternative:** Gunakan Mailtrap untuk development testing
-npm install
-
-# Start dev server
-npm start
-```
-
-Web app opens at: http://localhost:3000
-
-**Test Login:**
-- **Dosen**: `admin@gabta.com` / `admin123`
-- **Mahasiswa**: `mahasiswa@gabta.com` / `mahasiswa123`
-
-### 3. Setup Mobile App (5 minutes)
-
-```bash
-# Open new terminal
-cd d:\GABTA\mobile
-
-# Install dependencies
-npm install
-
-# Start Metro bundler
-npm start
-
-# In another terminal, run Android
-npm run android
-```
-
-**📖 Detailed mobile setup:** See [QUICK_START_MOBILE.md](QUICK_START_MOBILE.md)
-
-## 📱 Mobile Implementation
-
-The mobile app is **fully implemented** with all features:
-
-✅ **QR Scanner Screen** - Camera-based QR scanning with permissions  
-✅ **Attendance Submit Screen** - GPS location + distance validation  
-✅ **Sessions List Screen** - Grouped by class, real-time status  
-✅ **Profile Screen** - Multi-class stats & attendance history  
-
-**Key Files Created:**
-- `mobile/src/screens/QRScannerScreen.js` (208 lines)
-- `mobile/src/screens/AttendanceSubmitScreen.js` (378 lines)
-- `mobile/src/screens/SessionsListScreen.js` (318 lines)
-- `mobile/src/screens/ProfileScreen.js` (412 lines)
-- `mobile/src/navigation/MainNavigator.js` (updated with bottom tabs)
-
-**Documentation:**
-- 📘 [MOBILE_SETUP_GUIDE.md](MOBILE_SETUP_GUIDE.md) - Complete setup instructions
-- 📗 [QUICK_START_MOBILE.md](QUICK_START_MOBILE.md) - Fastest way to run
-- 📙 [MOBILE_ARCHITECTURE.md](MOBILE_ARCHITECTURE.md) - Visual diagrams & flow
-- 📕 [MOBILE_IMPLEMENTATION_SUMMARY.md](MOBILE_IMPLEMENTATION_SUMMARY.md) - What was built
-
-## 📊 Database Schema
-
-**Key Tables:**
-- `roles` - User roles (dosen, mahasiswa)
-- `users` - User accounts with role_id
-- `sessions` - Attendance sessions with **radiusMeters** & **className**
-- `attendance_records` - Attendance submissions with status & timestamp
-
-**Recent Additions:**
-- ✅ `sessions.radius_meters` (INTEGER, default 50, range 10-1000)
-- ✅ `sessions.class_name` (STRING, nullable) for multi-class support
-
-## 📂 Struktur Proyek
+# 4. Start servers
+npm run dev              # backend (port 5000)
+cd ../web && npm start   # frontend (port 3000)
 
 ```
-├── /server                 # Backend API 
-│   ├── /src 
-│   │   ├── /config         # App configuration 
-│   │   ├── /controllers    # Route controllers 
-│   │   ├── /middlewares    # Express middlewares 
-│   │   ├── /models         # Database models (Sequelize)
-│   │   ├── /routes         # API routes 
-│   │   ├── /services       # Business logic 
-│   │   ├── /utils          # Utility functions 
-│   │   └── app.js          # Express app setup 
-│   ├── .sequelizerc        # Sequelize CLI mapping to src/*
-│   ├── package.json 
-│   └── .env.sample         # Environment variables template 
-│ 
-├── /web                    # React web application 
-│   ├── /public 
-│   ├── /src 
-│   │   ├── /assets         # Static assets 
-│   │   ├── /components     # Reusable components 
-│   │   ├── /context        # React context providers 
-│   │   ├── /pages          # Page components 
-│   │   ├── /services       # API services 
-│   │   ├── /utils          # Utility functions 
-│   │   └── App.js          # Main component 
-│   └── package.json 
-│ 
-├── /mobile                 # React Native application 
-│   ├── /android            # Android native code 
-│   ├── /ios                # iOS native code 
-│   ├── /src 
-│   │   ├── /assets         # Static assets 
-│   │   ├── /components     # Reusable components 
-│   │   ├── /navigation     # Navigation configuration 
-│   │   ├── /screens        # Screen components 
-│   │   ├── /services       # API services 
-│   │   └── /utils          # Utility functions 
-│   └── package.json 
-│ 
-└── README.md               # Project documentation 
+
+## 🧪 Test Credentials
+
+**Dosen (Admin):**
+- Email: `admin@gabta.com`
+- Password: `admin123`
+
+**Mahasiswa:**
+- Register di http://localhost:3000/register
+- Email: `test@students.um.ac.id` (auto-assign role mahasiswa)
+- Check Mailtrap untuk verification email
+
+## 📖 Dokumentasi
+
+### Setup & Installation
+- [PANDUAN_INSTALASI.md](PANDUAN_INSTALASI.md) - Panduan lengkap Bahasa Indonesia
+- [SETUP_MAILTRAP.md](SETUP_MAILTRAP.md) - Setup email testing (5 menit)
+- [setup-windows.bat](setup-windows.bat) - One-click installer Windows
+
+### Fitur & Testing
+- [TESTING_GUIDE.md](TESTING_GUIDE.md) - Test semua fitur end-to-end
+- [TESTING_SWAGGER.md](TESTING_SWAGGER.md) - Test API via Swagger UI
+- [CHANGELOG.md](CHANGELOG.md) - Riwayat perubahan versi
+
+### Mobile App (Optional)
+- [MOBILE_SETUP_GUIDE.md](MOBILE_SETUP_GUIDE.md) - Setup React Native
+- [QUICK_START_MOBILE.md](QUICK_START_MOBILE.md) - Quick start mobile
+- [MOBILE_ARCHITECTURE.md](MOBILE_ARCHITECTURE.md) - Arsitektur mobile app
+- [MOBILE_IMPLEMENTATION_SUMMARY.md](MOBILE_IMPLEMENTATION_SUMMARY.md) - Detail implementasi
+
+### Technical Details
+- [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) - Detail implementasi fitur
+
+## 🏗️ Struktur Folder
+
 ```
-
-## Memulai
-
-### Server (Backend)
-
-```bash
-cd server
-npm install
-# Salin .env.sample ke .env dan sesuaikan konfigurasi database Postgres
-# Jalankan migrasi dan seeder
-npm run migrate
-npm run seed
-# Jalankan server
-npm run dev
-```
-
-Swagger tersedia di http://localhost:5000/api/docs (non-production).
-
-### Web (Frontend)
-
-```bash
-cd web
-npm install
-# Opsional: buat .env dengan REACT_APP_API_URL=http://localhost:5000/api
-npm start
-```
-
-### Mobile
-
-```bash
-cd mobile
-npm install
-# Emulator Android mengakses host lewat 10.0.2.2
-npm run android
-```
-
-## Teknologi yang Digunakan
-
-### Backend
-- Node.js
-- Express.js
-- PostgreSQL + Sequelize
+GABTA/
+├── server/              # Backend (Node.js + Express)
+│   ├── src/
+│   │   ├── controllers/ # API handlers
+│   │   ├── models/      # Database models
+│   │   ├── routes/      # API routes
+│   │   ├── services/    # Business logic
+│   │   └── middlewares/ # Auth & error handlers
+│   ├── migrations/      # DB migrations
+│   └── seeders/        # Seed data
+├── web/                # Frontend (React)
+│   └── src/
+│       ├── pages/       # Page components
+│       ├── components/  # Reusable UI
+│       ├── context/     # State management
+│       └── services/    # API calls
+└── mobile/             # React Native (optional)
+    └── src/
+        ├── screens/     # Mobile screens
+        └── navigation/  # Navigation config
 
 ### Web
 - React (CRA)
@@ -296,4 +167,44 @@ npm run android
 
 ### Mobile
 - React Native
-- React Navigation
+```
+
+## 🤝 Contributing
+
+1. Fork repository
+2. Create feature branch: `git checkout -b feature/AmazingFeature`
+3. Commit changes: `git commit -m 'Add AmazingFeature'`
+4. Push to branch: `git push origin feature/AmazingFeature`
+5. Open Pull Request
+
+## 📝 License
+
+MIT License - Lihat [LICENSE](LICENSE) untuk detail
+
+## 👥 Team
+
+Developed by **Nael Rudd** - [naelrudd](https://github.com/naelrudd)
+
+GitHub Repository: [https://github.com/naelrudd/GABTA](https://github.com/naelrudd/GABTA)
+
+## 🐛 Troubleshooting
+
+**Port sudah dipakai:**
+```powershell
+netstat -ano | findstr :5000
+taskkill /PID <PID> /F
+```
+
+**Database connection error:**
+- Pastikan PostgreSQL running
+- Check credentials di `.env`
+
+**Email tidak terkirim:**
+- Check Mailtrap credentials
+- Restart backend setelah update `.env`
+
+**Frontend tidak connect ke backend:**
+- Pastikan backend running di port 5000
+- Check CORS_ORIGIN di `.env`
+
+Lihat [PANDUAN_INSTALASI.md](PANDUAN_INSTALASI.md) untuk troubleshooting lengkap.

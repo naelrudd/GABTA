@@ -184,13 +184,14 @@ exports.login = async (req, res, next) => {
     }
 
     // Check if email is verified
-    if (!user.isVerified) {
-      return res.status(403).json({
-        message: 'Email belum diverifikasi. Silakan cek email Anda untuk link verifikasi.',
-        needsVerification: true,
-        email: user.email
-      });
-    }
+    // TEMPORARILY DISABLED FOR DEVELOPMENT - Skip email verification
+    // if (!user.isVerified) {
+    //   return res.status(403).json({
+    //     message: 'Email belum diverifikasi. Silakan cek email Anda untuk link verifikasi.',
+    //     needsVerification: true,
+    //     email: user.email
+    //   });
+    // }
 
     // Generate token
     const token = generateToken(user);

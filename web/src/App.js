@@ -14,6 +14,7 @@ import Profile from './pages/Profile';
 import SessionDetails from './pages/SessionDetails';
 import CreateSession from './pages/CreateSession';
 import ScanAttendance from './pages/ScanAttendance';
+import AttendSession from './pages/AttendSession';
 import ClassManagement from './pages/ClassManagement';
 import AttendanceScan from './pages/AttendanceScan';
 import NotFound from './pages/NotFound';
@@ -27,6 +28,13 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/resend-verification" element={<ResendVerification />} />
+          
+          {/* Simple attend route - auto attendance when scan QR */}
+          <Route path="/attend/:sessionId" element={
+            <ProtectedRoute>
+              <AttendSession />
+            </ProtectedRoute>
+          } />
           
           <Route path="/" element={
             <ProtectedRoute>

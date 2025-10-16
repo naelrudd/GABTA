@@ -125,6 +125,27 @@ const SessionDetails = () => {
                       className="img-fluid"
                     />
                   </div>
+                  
+                  {/* Scan URL - Untuk mahasiswa akses langsung dari HP */}
+                  {qrData.scanUrl && (
+                    <div className="mb-3">
+                      <h6 className="text-primary mb-2">📱 Link untuk Mahasiswa:</h6>
+                      <div className="d-flex flex-column gap-2">
+                        <a 
+                          href={qrData.scanUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="btn btn-primary"
+                        >
+                          <i className="bi bi-phone"></i> {qrData.scanUrl}
+                        </a>
+                        <small className="text-muted">
+                          <i className="bi bi-info-circle"></i> Scan QR atau klik link - otomatis presensi!
+                        </small>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="mb-3">
                     <h5 className="text-muted mb-2">Atau Gunakan Kode Manual:</h5>
                     <Badge bg="dark" className="fs-1 px-5 py-3 font-monospace shadow">

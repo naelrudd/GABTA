@@ -106,6 +106,26 @@ router.get('/:id', verifyToken, sessionController.getSessionById);
 
 /**
  * @swagger
+ * /sessions/{id}/scan:
+ *   get:
+ *     summary: Get session info with fresh token (for student direct scan access)
+ *     tags: [Sessions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Session info with fresh attendance token
+ */
+router.get('/:id/scan', verifyToken, sessionController.getSessionForScan);
+
+/**
+ * @swagger
  * /sessions/{id}/qr:
  *   get:
  *     summary: Get current QR code for session (rotates every 30s)
